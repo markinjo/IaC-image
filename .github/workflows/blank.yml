@@ -7,9 +7,6 @@ on:
         description: 'Docker image name'
         required: true
         default: 'iac'
-  push:
-    paths:
-      - 'Dockerfile'
 
 jobs:
   build-and-scan:
@@ -20,12 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Log in to DockerHub
-        run: |
-          if [[ -z "${{ secrets.DOCKERHUB_USERNAME }}" || -z "${{ secrets.DOCKERHUB_PASSWORD }}" ]]; then
-            echo "DockerHub credentials are missing!"
-            exit 1
-          fi
-          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build Docker image
         run: |
@@ -34,7 +26,7 @@ jobs:
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "${{ inputs.image_name }}:${{ github.sha }}"
+          image-ref: '${{ inputs.image_name }}:${{ github.sha }}'
           format: 'table'
           exit-code: 1
           ignore-unfixed: true
@@ -45,4 +37,5 @@ jobs:
         run: |
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
           docker tag ${{ inputs.image_name }}:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image_name }}:$SHORT_SHA
+          docker images
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image_name }}:$SHORT_SHA
