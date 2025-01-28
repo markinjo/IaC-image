@@ -31,6 +31,7 @@ jobs:
           exit-code: 1
           ignore-unfixed: true
           vuln-type: 'os,library'
+          scan-type: image
 
       - name: Push Docker image to DockerHub
         if: success()
