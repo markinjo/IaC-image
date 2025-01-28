@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.20.3
 
 # Postavljanje ENV promenljivih
 ENV TERRAFORM_VERSION=1.6.0 \
