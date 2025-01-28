@@ -1,0 +1,41 @@
+name: Build, Scan, and Push Docker Image ci/cd
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'Docker image name'
+        required: true
+        default: 'iac'
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ inputs.image_name }}:${{ github.sha }} .
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ inputs.image_name }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Push Docker image to DockerHub
+        if: success()
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+          docker tag ${{ inputs.image_name }}:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image_name }}:$SHORT_SHA
+          docker images
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image_name }}:$SHORT_SHA
